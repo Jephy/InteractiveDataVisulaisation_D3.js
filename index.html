@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Project-Dashboard</title>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+	<style>
+	#barChart {    
+		position:absolute;
+		top:0px;
+		left:0px;
+		width:400px;
+		height: 400px; 
+	}
+	#pieChart {
+		position:absolute;
+		top:50px;
+		left:700px;
+		height:600px;
+	}
+	#pieCharttitle {
+		position:absolute;
+		top:10px;
+		left:760px;
+		height:50px;
+	}
+	#lineCharttitle {
+		position:absolute;
+		top:600px;
+		left:200px;
+		height:50px;
+	}
+	#visualisation {
+		position:absolute;
+		top:650px;
+		left:0px;
+		width:1000px;
+		height:600px;
+	}
+	.axis path {
+    fill: none;
+    stroke: #777;
+    shape-rendering: crispEdges;
+	}
+	.axis text {
+		font-family: Lato;
+		font-size: 13px;
+	}	
+}
+	</style>
+  </head>
+  <body>
+	<div id="barChart"></div>
+    <div id="pieChart"></div> 
+	<div id="pieCharttitle"></div> 
+	<div id="lineCharttitle"></div> 
+	<svg id="visualisation" width="1000" height="500"></svg>
+    <script type="text/javascript">
+
+//****function to create Pie chart***	
+function dsPieChart(group){			
+			var w = 450;
+			var h = 450;	
+			
+			d3.csv("pieChartdata.csv", function(data) {
+				  var dataset = [];
+				  var categoryC = [];
+				  data.map(function(d) {
+					 if(d.Group==group){
+						dataset.push(d.number_of_reg);
+						categoryC.push(d.category)
+					}
+				  });	
+											
+				var outerRadius = w / 2;
+				var innerRadius = w / 3;
+				
+				var arc = d3.svg.arc()
+								.innerRadius(innerRadius)
+								.outerRadius(outerRadius);
+				console.log("Test1");
+				var pie = d3.layout.pie();
+				//Easy colors accessible via a 10-step ordinal scale
+				var color = d3.scale.category10();
+				
+				d3.select("#the_SVG_title").remove();
+				
+				var svg2 = d3.select("#pieCharttitle")
+				text = svg2.append('text').text('Categorized Vehicle Registrations')
+						.attr("id","the_SVG_title")
+                        .attr('x', 50)
+                        .attr('y', 150)
+						.style("color", "brown")
+						.style("font-size", "22px") 
+                        							
+				
+				d3.select("#the_SVG_ID").remove();
+
+				//Create SVG element
+				var svgpie = d3.select("#pieChart")
+							.append("svg")
+							.attr("id","the_SVG_ID")
+							.attr("width", w )
+							.attr("height", h)
+							.attr("y", 25)	
+																		
+				//Set up groups
+				var arcs = svgpie.selectAll("g.arc")
+							  .data(pie(dataset))
+							  .enter()
+							  .append("g")
+							  .attr("class", "arc")							  
+							  .attr("transform", "translate(" + outerRadius + "," + outerRadius + ")");
+							  
+													
+				//Draw arc paths
+				arcs.append("path")
+					.attr("fill", function(d, i) {
+						return color(i);
+					})
+					.attr("d", arc)
+					.on("mouseover", function(d,i) {
+						d3.select(this)
+					   .attr("fill", "grey");
+					})
+					.on("mouseout", function(d,i) {
+						d3.select(this)
+						 .transition()
+						.duration(250)
+						.attr("fill", color(i));
+						})
+					.append("title")
+					.text(function(d,i) {
+							 return categoryC[i]+" - "+dataset[i];
+					  });
+				  					
+				//Labels
+				arcs.append("text")
+					.attr("transform", function(d) {
+						return "translate(" + arc.centroid(d) + ")";
+					})
+					.attr("text-anchor", "middle")
+					.style("font-size", "13px") 
+					.text(function(d,i) {						
+						return d.value;					
+					})
+					.on("mouseover", function(d,i) {
+						d3.select(this)
+					   .style("font-size", "28px") 
+					})
+					.on("mouseout", function(d,i) {
+						d3.select(this)
+						.style("font-size", "13px") 
+						});			
+					
+					var svgWidth = 205;
+					var svgHeight = 300;
+				 
+				//Create Legend   
+					var legend = svgpie.append("g")
+					.attr("class", "legend")
+					.attr("x", svgWidth-65)
+					.attr("y", svgHeight-65)
+					
+					legend.selectAll('g').data(dataset)
+					.enter()
+					.append('g')
+					.each(function(d, i) {
+					var g = d3.select(this);
+					g.append("rect")
+					.attr("x", svgWidth - 65)
+					.attr("y", i*25+135)
+					.attr("width", 10)
+					.attr("height", 10)
+					.style("fill", color(i));
+
+					g.append("text")
+					.attr("x", svgWidth - 50)
+					.attr("y", i * 25 + 145)
+					.attr("height",20)
+					.attr("width",100)
+					.style("fill", "Black")
+					.text(categoryC[i]);
+					});	
+					
+					svgpie.append("text")
+					.attr("x", svgWidth+10)             
+					.attr("y", 300)
+					.attr("text-anchor", "middle")  
+					.style("font-size", "25px") 
+					.text(group);
+				
+				});
+}
+
+//****Create Bar chart***
+
+var margin = {top: 20, right: 60, bottom: 30, left: 60},
+width = 700 - margin.left - margin.right,
+height = 500 - margin.top - margin.bottom;
+
+var x = d3.scale.ordinal()
+    .rangeRoundBands([0, width], .1);
+
+var y = d3.scale.linear()
+    .range([height, 0]);
+
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom");
+
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left")
+    .ticks(15, "");
+
+var svg = d3.select("#barChart").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+d3.tsv("barchartdata.tsv", type, function(error, data) {
+  if (error) throw error;
+
+  x.domain(data.map(function(d) { return d.year; }));
+  y.domain([0, d3.max(data, function(d) { return d.registrations; })]);
+
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+	  .style("font-size", "14px") 
+      .call(xAxis);
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+	  .style("font-size", "12px") 
+    .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 0)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+	  .style("font-size", "13px") 
+      .text("No:of Registrations");
+
+  svg.selectAll(".bar")
+      .data(data)
+    .enter().append("rect")
+      .attr("class", "bar")
+      .attr("x", function(d) { return x(d.year); })
+      .attr("width", x.rangeBand())
+      .attr("y", function(d) { return y(d.registrations); })
+	  .attr("fill", "blue")
+      .attr("height", function(d) { return height - y(d.registrations); })
+	  .on("mouseover", function() {
+        d3.select(this)
+       .attr("fill", "orange");
+		})
+		.on("mouseout", function(d) {
+        d3.select(this)
+		 .transition()
+		.duration(250)
+		.attr("fill", "rgb(0, 125, " + (d.registrations*10) + ")");
+		})
+		.on("click", function(d) {
+		  
+		  dsPieChart(d.year);
+	
+		})
+	.append("title")
+	   .text(function(d) {
+			 return "Vehicle Registrations for year "+ d.year +" is " + d.registrations+" and amount received : "+d.vehicle_registrations_amt;
+	   });
+	
+	svg.append("text")
+        .attr("x", width/2)             
+        .attr("y", 0)
+        .attr("text-anchor", "middle")  
+        .style("font-size", "22px") 
+		.style("color", "brown")
+        .text("Number of Vehicle Registrations for Years 2000 - 2014");
+});
+
+function type(d) {
+  d.registrations = +d.registrations;
+  return d;
+}	
+
+	
+dsPieChart("All Years");
+
+
+//****function to create Line chart***		
+function dslineChart(){		
+var vehicle_new = [{"registrations": "221491","year": "2001"}, 
+			{"registrations": "169994","year": "2002"}, 
+			{"registrations": "190392","year": "2003"}, 
+			{"registrations": "199086","year": "2004"},
+			{"registrations": "224282","year": "2005"},
+			{"registrations": "236818","year": "2006"},
+			{"registrations": "248603","year": "2007"},
+			{"registrations": "195746","year": "2008"},
+			{"registrations": "72429","year": "2009"},
+			{"registrations": "103793","year": "2010"},
+			{"registrations": "105907","year": "2011"},
+			{"registrations": "95195","year": "2012"},
+			{"registrations": "90484","year": "2013"},
+			{"registrations": "118795","year": "2014"}];
+
+var vehicle_old = [{"registrations": "33418","year": "2001"}, 
+			{"registrations": "30474","year": "2002"},
+			{"registrations": "32765","year": "2003"}, 
+			{"registrations": "41152","year": "2004"}, 
+			{"registrations": "68660","year": "2005"},
+			{"registrations": "87894","year": "2006"},
+			{"registrations": "89353","year": "2007"},
+			{"registrations": "89808","year": "2008"},
+			{"registrations": "76740","year": "2009"},
+			{"registrations": "58324","year": "2010"},
+			{"registrations": "53544","year": "2011"},
+			{"registrations": "50292","year": "2012"},
+			{"registrations": "66057","year": "2013"},
+			{"registrations": "70910","year": "2014"}];
+
+var vis = d3.select("#visualisation"),
+    WIDTH = 1000,
+    HEIGHT = 500,
+    MARGINS = {
+        top: 20,
+        right: 20,
+        bottom: 20,
+        left: 50
+    },
+color_hash = {  0 : ["NEW", "Red"],
+				1 : ["USED", "green"]
+			  }  
+xScale = d3.scale.linear().range([MARGINS.left, WIDTH - MARGINS.right]).domain([2001,2014]),
+yScale = d3.scale.linear().range([HEIGHT - MARGINS.top, MARGINS.bottom]).domain([30000,250000]),
+xLineAxis = d3.svg.axis()
+    .scale(xScale),
+  
+yLineAxis = d3.svg.axis()
+    .scale(yScale)
+    .orient("left");
+	
+var svg_linetitle = d3.select("#lineCharttitle")
+	text = svg_linetitle.append('text').text('Line chart showing registrations for New/Used Vehicles for year 2001-2014')
+			.attr('x', 50)
+			.attr('y', 150)
+			.style("font-size", "22px")
+			.style("color", "purple"); 
+	
+var lineGen = d3.svg.line()
+    .x(function(d) {
+        return xScale(d.year);
+    })
+    .y(function(d) {
+        return yScale(d.registrations);
+    });
+    //.interpolate("basis");
+	
+vis.append('svg:path')
+  .attr('d', lineGen(vehicle_new))
+  .attr('stroke', 'red')
+  .attr('stroke-width', 2)
+  .attr('fill', 'none')
+
+vis.append("svg:g")
+    .attr("class","axis")
+    .attr("transform", "translate(0," + (HEIGHT - MARGINS.bottom) + ")")
+    .call(xLineAxis)
+	.append("text")
+      .attr("x", 960)
+      .attr("dx", ".71em")
+      .style("text-anchor", "end")
+	  .style("font-size", "15px") 
+      .text("Year ->");
+ 
+vis.append("svg:g")
+    .attr("class","axis")
+    .attr("transform", "translate(" + (MARGINS.left) + ",0)")
+    .call(yLineAxis)
+	.append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 0)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+	  .style("font-size", "15px") 
+      .text("No:of Registrations");
+
+vis.append('svg:path')
+  .attr('d', lineGen(vehicle_old))
+  .attr('stroke', 'green')
+  .attr('stroke-width', 2)
+  .attr('fill', 'none');
+  
+//Create Legend   
+	var legend = vis.append("g")
+	.attr("class", "legend")
+	.attr("x", WIDTH-65)
+	.attr("y", 30)
+	.attr("height", 350)
+	.attr("width", 350);
+
+	legend.selectAll('g').data(vehicle_new)
+	.enter()
+	.append('g')
+	.each(function(d, i) {
+	console.log(i)
+	if(i<2){
+		var g = d3.select(this);
+		g.append("rect")
+		.attr("x", WIDTH - 65)
+		.attr("y", i*40)
+		.attr("width", 15)//box width
+		.attr("height", 15)//box height
+		.style("fill", color_hash[String(i)][1]);
+	}
+	g.append("text")
+	.attr("x", WIDTH - 50)
+	.attr("y", i * 40 + 16)
+	.attr("height",30)
+	.attr("width",100)
+	.style("fill", color_hash[String(i)][1])
+	.text(color_hash[String(i)][0]);
+	});
+	
+	
+	
+}
+
+dslineChart();
+	
+	
+	
+    </script>
+  </body>
+</html>
